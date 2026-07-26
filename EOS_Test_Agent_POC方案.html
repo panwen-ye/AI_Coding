@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>EOS Test Agent POC 架构设计与实施方案</title>
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+    margin: 40px;
+    color: #222;
+    background: #fff;
+}
+h1,h2,h3 { color:#1f2937; }
+h1 { border-bottom:3px solid #2563eb; padding-bottom:10px; }
+.section {
+    margin: 30px 0;
+}
+pre {
+    position: relative;
+    background:#1e293b;
+    color:#e2e8f0;
+    padding:20px;
+    border-radius:8px;
+    overflow:auto;
+}
+code {
+    font-family:"JetBrains Mono","Consolas",monospace;
+}
+.copy-btn {
+    position:absolute;
+    right:10px;
+    top:10px;
+    cursor:pointer;
+    background:#2563eb;
+    color:white;
+    border:0;
+    padding:6px 12px;
+    border-radius:5px;
+}
+table {
+    border-collapse:collapse;
+    width:100%;
+}
+th,td {
+    border:1px solid #ddd;
+    padding:10px;
+}
+th { background:#f1f5f9; }
+.note {
+    background:#eff6ff;
+    border-left:5px solid #2563eb;
+    padding:15px;
+}
+</style>
+<script>
+function copyCode(btn){
+    const code = btn.parentElement.querySelector("code").innerText;
+    navigator.clipboard.writeText(code);
+    btn.innerText="已复制";
+    setTimeout(()=>btn.innerText="复制",1200);
+}
+</script>
+</head>
+
+<body>
+
+<h1>EOS Test Agent POC 架构设计与可执行改造方案</h1>
+
+<div class="note">
+<b>项目定位：</b>
+不是简单的 AI 自动写测试，而是通过 Agent 将没有文档、没有测试的 EOS 老系统逆向还原为可验证的业务行为模型，为后续 Spring Boot + Vue 现代化改造提供安全基础。
+</div>
+
+<div class="section">
+<h2>一、POC目标</h2>
+<p>选择一个 EOS 中等复杂业务模块（例如订单模块），完成：</p>
+<ul>
+<li>代码分析</li>
+<li>数据库分析</li>
+<li>业务规则抽取</li>
+<li>业务场景生成</li>
+<li>Runtime行为采集</li>
+<li>Golden Master建立</li>
+<li>OpenSpec生成</li>
+<li>测试自动生成</li>
+</ul>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+EOS
+ |
+ v
+EOS Test Agent
+ |
+ +-- Code Analysis
+ +-- DB Analysis
+ +-- Runtime Probe
+ |
+ v
+Business Rules
+ |
+ v
+Scenario
+ |
+ v
+Golden Master
+ |
+ v
+OpenSpec
+ |
+ v
+Spring Boot + Vue Migration
+</code></pre>
+</div>
+
+<div class="section">
+<h2>二、整体架构</h2>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+CLI
+ |
+Orchestrator
+ |
++------------------------------+
+|                              |
+Code Agent   DB Agent   Runtime Agent
+|                              |
++--------------+---------------+
+               |
+       Business Rule Agent
+               |
+       Scenario Generator
+               |
+ +-------------+-------------+
+ |                           |
+Test Generator        OpenSpec Generator
+ |
+Reviewer Agent
+ |
+Migration Report
+</code></pre>
+
+</div>
+
+<div class="section">
+<h2>三、技术栈</h2>
+<table>
+<tr><th>领域</th><th>工具</th></tr>
+<tr><td>Agent Runtime</td><td>OpenCode</td></tr>
+<tr><td>规格管理</td><td>OpenSpec</td></tr>
+<tr><td>Java分析</td><td>JavaParser / Spoon / Tree-sitter</td></tr>
+<tr><td>测试</td><td>JUnit5 / Mockito / Testcontainers</td></tr>
+<tr><td>数据库</td><td>Oracle JDBC / Schema Analyzer</td></tr>
+<tr><td>存储</td><td>JSON / YAML / SQLite</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>四、Skill设计</h2>
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+.opencode/
+└── skills/
+    ├── eos-code-archaeology
+    ├── eos-db-analysis
+    ├── eos-business-rule
+    ├── eos-scenario
+    ├── eos-runtime-probe
+    ├── eos-golden-master
+    ├── eos-test-generation
+    └── eos-review
+</code></pre>
+
+<h3>核心Skill职责</h3>
+<ul>
+<li><b>Code Archaeology：</b>建立代码调用关系和依赖图。</li>
+<li><b>DB Analysis：</b>分析表、字段、存储过程、Trigger。</li>
+<li><b>Business Rule：</b>从代码和运行结果中提取业务规则。</li>
+<li><b>Runtime Probe：</b>记录EOS真实输入输出和数据库变化。</li>
+<li><b>Golden Master：</b>保存旧系统行为基线。</li>
+<li><b>Reviewer：</b>审查AI推断，降低幻觉风险。</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>五、CLI设计</h2>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+eos-test init
+
+eos-test analyze order
+
+eos-test rules order
+
+eos-test scenarios order
+
+eos-test probe order
+
+eos-test golden order
+
+eos-test review order
+
+eos-test report order
+</code></pre>
+</div>
+
+<div class="section">
+<h2>六、实施阶段</h2>
+
+<table>
+<tr><th>阶段</th><th>周期</th><th>成果</th></tr>
+<tr>
+<td>环境建设</td><td>2-3天</td>
+<td>OpenCode/OpenSpec/CLI运行</td>
+</tr>
+<tr>
+<td>代码考古</td><td>3-5天</td>
+<td>Call Graph、依赖地图</td>
+</tr>
+<tr>
+<td>业务规则抽取</td><td>5-7天</td>
+<td>Business Rules</td>
+</tr>
+<tr>
+<td>Scenario生成</td><td>3-5天</td>
+<td>业务测试场景</td>
+</tr>
+<tr>
+<td>Runtime Probe</td><td>5-10天</td>
+<td>真实行为采集</td>
+</tr>
+<tr>
+<td>Golden Master</td><td>3-5天</td>
+<td>旧系统行为基线</td>
+</tr>
+</table>
+</div>
+
+<div class="section">
+<h2>七、关键风险</h2>
+<ul>
+<li>EOS环境无法完整恢复。</li>
+<li>动态调用导致静态分析不足。</li>
+<li>业务规则存在歧义。</li>
+<li>Oracle状态难以重复。</li>
+<li>LLM上下文成本过高。</li>
+</ul>
+
+<div class="note">
+解决原则：
+AST保证事实，Runtime保证行为，LLM负责解释，人负责最终确认。
+</div>
+</div>
+
+<div class="section">
+<h2>八、成熟案例参考方向</h2>
+<ul>
+<li>IBM watsonx Code Assistant：企业级Java现代化、代码理解和测试生成。</li>
+<li>OpenRewrite / Moderne：基于AST的确定性Java迁移。</li>
+<li>AWS Strangler Fig：新旧系统并存、渐进式替换。</li>
+<li>Diffblue：AI生成Java测试。</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>九、最终目标</h2>
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+Legacy EOS
+    |
+    v
+Behavior Reconstruction
+    |
+    +-- Business Rules
+    +-- Scenarios
+    +-- Golden Master
+    +-- OpenSpec
+    |
+    v
+Safe Migration
+    |
+    v
+Spring Boot + Vue
+</code></pre>
+
+<p>
+EOS Test Agent的核心价值：
+把“没人敢动的遗留系统”，转换成“可以被验证、被迁移、被持续演进的系统”。
+</p>
+</div>
+
+</body>
+</html>

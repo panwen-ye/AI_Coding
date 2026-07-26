@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Golden Master 输入来源与 EOS Test Agent 设计说明</title>
+<style>
+body{
+    font-family:-apple-system,BlinkMacSystemFont,"Microsoft YaHei",sans-serif;
+    line-height:1.8;
+    margin:40px;
+    color:#222;
+}
+h1,h2,h3{color:#1f2937;}
+h1{border-bottom:3px solid #2563eb;padding-bottom:10px;}
+pre{
+    background:#1e293b;
+    color:#e2e8f0;
+    padding:20px;
+    border-radius:8px;
+    position:relative;
+    overflow:auto;
+}
+code{
+    font-family:"JetBrains Mono","Consolas",monospace;
+}
+.copy-btn{
+    position:absolute;
+    right:10px;
+    top:10px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:6px 12px;
+    border-radius:5px;
+    cursor:pointer;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+th{
+    background:#f1f5f9;
+}
+.note{
+    background:#eff6ff;
+    border-left:5px solid #2563eb;
+    padding:15px;
+}
+</style>
+<script>
+function copyCode(btn){
+    let text=btn.parentElement.querySelector("code").innerText;
+    navigator.clipboard.writeText(text);
+    btn.innerText="已复制";
+    setTimeout(()=>btn.innerText="复制",1200);
+}
+</script>
+</head>
+
+<body>
+
+<h1>Golden Master 输入来源与 EOS Test Agent 设计说明</h1>
+
+<div class="note">
+Golden Master 不是简单保存输出，而是保存旧系统真实行为样本：
+输入 + 环境 + 输出 + 副作用。
+对于 EOS 老项目迁移，最大的挑战不是生成测试代码，而是发现什么应该被测试。
+</div>
+
+<h2>1. Golden Master 为什么依赖输入</h2>
+
+<p>
+Golden Master 的本质：
+让旧系统运行一次，把真实结果保存下来，作为未来 Spring Boot + Vue 重构后的验证标准。
+</p>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+输入来源
+   |
+   +-- 历史真实数据
+   +-- 代码分析推导
+   +-- 数据库分析
+   +-- 操作日志
+   +-- 人工业务知识
+   |
+   ↓
+Scenario Generator
+   |
+   ↓
+EOS执行
+   |
+   ↓
+Golden Master
+</code></pre>
+
+
+<h2>2. 输入来源一：历史生产数据</h2>
+
+<p>
+生产数据是最真实的业务来源，例如订单、支付、审核等历史记录。
+</p>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+生产数据库
+      |
+      ↓
+数据脱敏
+      |
+      ↓
+测试环境
+      |
+      ↓
+生成Golden Case
+</code></pre>
+
+<p>
+注意：
+不能直接复制生产数据，需要处理敏感信息和状态恢复问题。
+</p>
+
+
+<h2>3. 输入来源二：业务操作日志</h2>
+
+<p>
+很多老系统没有测试，但是有完整操作记录。
+日志可以帮助恢复业务流程。
+</p>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+用户操作日志
+
+创建订单
+   |
+审核订单
+   |
+支付订单
+   |
+完成订单
+
+        ↓
+
+业务Scenario
+</code></pre>
+
+
+<h2>4. 输入来源三：代码反向生成测试输入</h2>
+
+<p>
+这是 AI Agent 最重要的能力之一。
+通过分析代码中的条件、异常、状态转换，自动推导测试场景。
+</p>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+if(status != WAIT_APPROVE)
+    throw Exception
+
+if(amount > 100000)
+    requireManagerApprove()
+
+
+AI推导：
+
+Case1:
+status=WAIT_APPROVE
+amount=5000
+
+Case2:
+status=CANCEL
+amount=5000
+
+Case3:
+status=WAIT_APPROVE
+amount=100001
+</code></pre>
+
+
+<h2>5. 输入来源四：数据库结构分析</h2>
+
+<p>
+很多 EOS 项目的业务规则隐藏在数据库设计中。
+</p>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+ORDER表
+
+STATUS字段
+
+0 创建
+1 提交
+2 审核中
+3 完成
+
+
+推导：
+
+状态机模型
+
+生成状态转换测试
+</code></pre>
+
+
+<h2>6. 输入来源五：人工业务确认</h2>
+
+<p>
+AI无法完全理解历史业务含义，需要人工确认低置信度规则。
+</p>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+AI发现：
+
+type=7
+
+可能含义：
+
+A VIP订单
+B 特殊订单
+C 废弃类型
+
+↓
+
+业务确认
+
+↓
+
+形成正式规则
+</code></pre>
+
+
+<h2>7. 输入来源六：线上流量录制</h2>
+
+<p>
+高级方案：记录真实用户请求和系统行为。
+</p>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+线上请求
+
+Request
+Response
+DB变化
+外部调用
+
+        ↓
+
+Traffic Recording
+
+        ↓
+
+Golden Master
+</code></pre>
+
+
+<h2>8. EOS Test Agent 推荐输入策略</h2>
+
+<table>
+<tr>
+<th>来源</th>
+<th>优先级</th>
+<th>作用</th>
+</tr>
+<tr>
+<td>历史业务数据</td>
+<td>★★★★★</td>
+<td>真实业务覆盖</td>
+</tr>
+<tr>
+<td>操作日志</td>
+<td>★★★★★</td>
+<td>恢复流程</td>
+</tr>
+<tr>
+<td>代码分析</td>
+<td>★★★★★</td>
+<td>发现隐藏规则</td>
+</tr>
+<tr>
+<td>数据库分析</td>
+<td>★★★★</td>
+<td>发现状态模型</td>
+</tr>
+<tr>
+<td>人工确认</td>
+<td>★★★★</td>
+<td>解决歧义</td>
+</tr>
+</table>
+
+
+<h2>9. POC实施建议</h2>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+订单模块
+
+100个Golden Case:
+
+20 历史订单
+20 人工设计
+40 AI代码分析生成
+20 边界测试
+
+输出:
+
+golden-master/
+
+case001.json
+case002.json
+...
+case100.json
+</code></pre>
+
+
+<h2>10. 推荐增加 Test Case Discovery Agent</h2>
+
+<p>
+在 EOS Test Agent 架构中，应该增加一个负责发现测试目标的 Agent。
+</p>
+
+<pre><button class="copy-btn" onclick="copyCode(this)">复制</button><code>
+Code Archaeologist
+        |
+        ↓
+Business Rule Agent
+        |
+        ↓
+Test Case Discovery Agent
+        |
+        ↓
+Runtime Probe
+        |
+        ↓
+Golden Master
+</code></pre>
+
+
+<h2>11. 核心认知总结</h2>
+
+<div class="note">
+Golden Master = 输入 + 环境 + 输出 + 副作用 的完整行为快照。
+<br><br>
+对于 EOS 这种没有测试、没有完整文档的遗留系统：
+发现高质量输入，比生成测试代码更重要。
+</div>
+
+</body>
+</html>
