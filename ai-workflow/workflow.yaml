@@ -1,0 +1,14 @@
+workflow:
+  name: feature-development
+
+  steps:
+
+   - architecture-agent
+
+   - coding-agent
+
+   - test-agent
+
+   - mvn-test
+
+   - fix-agent
